@@ -47,6 +47,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import LinearProgress from '@mui/material/LinearProgress';
+import Alert from '@mui/material/Alert';
 
 import axios from 'axios';
 
@@ -179,6 +180,15 @@ class App extends React.Component {
       editTermId:"",
 
       deleteTermId:"",
+
+      errCreateDescription:false,
+      errEditDescription:false,
+
+      alertErrorCreate:false,
+      alertErrorCreateMessage:"",
+
+      alertErrorEdit:false,
+      alertErrorEditMessage:"",
     };
   }
   
@@ -206,6 +216,16 @@ class App extends React.Component {
 
   // Change description Types when create
   handleChangeCreateDescription = (event) => {
+    if (event.target.value.length != 0) {
+      this.setState({
+        errCreateDescription: true
+      });
+    }else{
+      this.setState({
+        errCreateDescription: false
+      });
+    }
+
     this.setState({
       createDescription: event.target.value
     });
@@ -228,6 +248,15 @@ class App extends React.Component {
 
   // Change description Types when edit
   handleEditDescription = (event) => {
+    if (event.target.value.length != 0) {
+      this.setState({
+        errEditDescription: true
+      });
+    }else{
+      this.setState({
+        errEditDescription: false
+      });
+    }
     this.setState({
       editDescription: event.target.value
     });
@@ -325,6 +354,12 @@ class App extends React.Component {
     this.setState({editUserType:userType });
     this.setState({editSectionType:sectionType });
     this.setState({editDescription:description });
+
+    if (description.length != 0) {
+      this.setState({errEditDescription: true});
+    }else{
+      this.setState({errEditDescription: false});
+    }
     this.handleClickOpenEditDialog();
   }
 
@@ -335,24 +370,53 @@ class App extends React.Component {
 
   // Save Term and Condition
   saveTandC(){
-    this.setState({loadingTandC: true});
+    if (this.state.errCreateDescription == true) {
+    // this.setState({loadingTandC: true});
     axios.post('http://127.0.0.1:8000/api/terms', {
       user_type_id: this.state.createUserType,
       sec_type_id: this.state.createSectionType,
       description: this.state.createDescription,
     })
       .then((res) => {
-        this.setState({
-          openAddTC: false
-        });
-        this.getAllTandC();
+        if(res.data.http_status == "success") {
+          this.setState({
+            openAddTC: false
+          });
+          this.setState({
+            alertErrorCreate: false
+          });
+          this.setState({
+            alertErrorCreateMessage: ""
+          });
+
+          this.setState({
+            createUserType: ""
+          });
+          this.setState({
+            createSectionType: ""
+          });
+          this.setState({
+            createDescription: ""
+          });
+          this.getAllTandC();
+        }else{
+          this.setState({
+            alertErrorCreateMessage: res.data.message
+          });
+          this.setState({
+            alertErrorCreate: true
+          });
+        }
+        
       }).catch((error) => {
         console.log(error)
       });
+    }
   }
 
   // Edit Term and Condition
   editTandC(){
+    if (this.state.errEditDescription == true) {
     this.setState({loadingTandC: true});
     axios.post('http://127.0.0.1:8000/api/terms/edit', {
       term_id: this.state.editTermId,
@@ -361,13 +425,34 @@ class App extends React.Component {
       description: this.state.editDescription,
     })
       .then((res) => {
-        this.setState({
-          openEditTC: false
-        });
-        this.getAllTandC();
+
+        if(res.data.http_status == "success") {
+
+          this.setState({
+            alertErrorEdit: false
+          });
+          this.setState({
+            alertErrorEditMessage: ""
+          });
+
+          this.setState({
+            openEditTC: false
+          });
+          this.getAllTandC();
+        }else{
+          this.setState({
+            alertErrorEditMessage: res.data.message
+          });
+          this.setState({
+            alertErrorEdit: true
+          });
+        }
+
+        
       }).catch((error) => {
         console.log(error)
       });
+    }
   }
 
   // Delete Term and Condition
@@ -560,6 +645,10 @@ class App extends React.Component {
 
         {/* Dialog Create New T&C */}
         <Dialog open={this.state.openAddTC} onClose={this.handleCloseAddDialog} fullWidth>
+          { this.state.alertErrorCreate ?
+        <Alert severity="error">{this.state.alertErrorCreateMessage}</Alert>
+        : null
+          }
           <DialogTitle>Create Terms & Conditions</DialogTitle>
           <DialogContent>
             <FormControl fullWidth margin='normal'>
@@ -594,23 +683,29 @@ class App extends React.Component {
 
             <FormControl fullWidth margin='normal'>
               <TextField
-                id="standard-multiline-static"
+                id="outlined-multiline-static"
                 label="Description"
                 multiline
                 rows={4}
                 variant="outlined"
+                error={this.state.errCreateDescription ? false : true}
+                helperText={this.state.errCreateDescription ? null : "Description Required"}
                 onChange={this.handleChangeCreateDescription}
               />
             </FormControl>
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleCloseAddDialog} >Close</Button>
-            <Button onClick={() => this.saveTandC()} >Save</Button>
+            <Button variant="outlined" onClick={this.handleCloseAddDialog} >Close</Button>
+            <Button variant="contained" onClick={() => this.saveTandC()} >Save</Button>
           </DialogActions>
         </Dialog>
 
         {/* Dialog Edit T&C */}
         <Dialog open={this.state.openEditTC} onClose={this.handleCloseEditDialog} fullWidth>
+        { this.state.alertErrorEdit ?
+        <Alert severity="error">{this.state.alertErrorEditMessage}</Alert>
+        : null
+          }
           <DialogTitle>Update Terms & Conditions</DialogTitle>
           <DialogContent>
             <FormControl fullWidth margin='normal'>
@@ -645,19 +740,21 @@ class App extends React.Component {
 
             <FormControl fullWidth margin='normal'>
               <TextField
-                id="standard-multiline-static"
+                id="outlined-multiline-static"
                 label="Description"
                 multiline
                 rows={4}
                 variant="outlined"
+                error={this.state.errEditDescription ? false : true}
+                helperText={this.state.errEditDescription ? null : "Description Required"}
                 value={editDescription}
                 onChange={this.handleEditDescription}
               />
             </FormControl>
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleCloseEditDialog} >Close</Button>
-            <Button onClick={() => this.editTandC()} >Save</Button>
+            <Button variant="outlined" onClick={this.handleCloseEditDialog} >Close</Button>
+            <Button variant="contained" onClick={() => this.editTandC()} >Save</Button>
           </DialogActions>
         </Dialog>
 
@@ -668,8 +765,8 @@ class App extends React.Component {
           <Typography gutterBottom variant="body2" component="div">Do you want to delete this term & condition?</Typography>     
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleCloseDeleteDialog} color="success">No Keep</Button>
-            <Button onClick={() => this.deleteTandC()} color="error">Yes Delete</Button>
+            <Button onClick={this.handleCloseDeleteDialog} variant="outlined" color="success">No Keep</Button>
+            <Button onClick={() => this.deleteTandC()} variant="outlined" color="error">Yes Delete</Button>
           </DialogActions>
         </Dialog>
 
