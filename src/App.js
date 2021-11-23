@@ -598,7 +598,7 @@ class App extends React.Component {
                 label="Description"
                 multiline
                 rows={4}
-                variant="standard"
+                variant="outlined"
                 onChange={this.handleChangeCreateDescription}
               />
             </FormControl>
@@ -649,7 +649,7 @@ class App extends React.Component {
                 label="Description"
                 multiline
                 rows={4}
-                variant="standard"
+                variant="outlined"
                 value={editDescription}
                 onChange={this.handleEditDescription}
               />
